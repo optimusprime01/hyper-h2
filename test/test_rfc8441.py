@@ -26,12 +26,14 @@ class TestRFC8441(object):
             (b'user-agent', b'someua/0.0.1'),
         ]
 
-        client = h2.connection.H2Connection()
+        client = h2.connection.H2Connection(
+            config=h2.config.H2Configuration(enable_rfc8441=True)
+        )
         client.initiate_connection()
         client.send_headers(stream_id=1, headers=headers)
 
         server = h2.connection.H2Connection(
-            config=h2.config.H2Configuration(client_side=False)
+            config=h2.config.H2Configuration(client_side=False, enable_rfc8441=True)
         )
         events = server.receive_data(client.data_to_send())
         event = events[1]

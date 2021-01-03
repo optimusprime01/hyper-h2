@@ -129,6 +129,9 @@ class H2Configuration:
     normalize_inbound_headers = _BooleanConfigOption(
         'normalize_inbound_headers'
     )
+    enable_rfc8441 = _BooleanConfigOption(
+        'enable_rfc8441'
+    )
 
     def __init__(self,
                  client_side=True,
@@ -137,6 +140,7 @@ class H2Configuration:
                  normalize_outbound_headers=True,
                  validate_inbound_headers=True,
                  normalize_inbound_headers=True,
+                 enable_rfc8441=False,
                  logger=None):
         self.client_side = client_side
         self.header_encoding = header_encoding
@@ -144,6 +148,7 @@ class H2Configuration:
         self.normalize_outbound_headers = normalize_outbound_headers
         self.validate_inbound_headers = validate_inbound_headers
         self.normalize_inbound_headers = normalize_inbound_headers
+        self.enable_rfc8441 = enable_rfc8441
         self.logger = logger or DummyLogger(__name__)
 
     @property
@@ -168,3 +173,7 @@ class H2Configuration:
         if value is True:
             raise ValueError("header_encoding cannot be True")
         self._header_encoding = value
+
+    @property
+    def is_rfc8441_enabled(self):
+        return self.enable_rfc8441
