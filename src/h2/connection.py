@@ -326,6 +326,8 @@ class H2Connection:
                     self.DEFAULT_MAX_HEADER_LIST_SIZE,
             }
         )
+        if self.config.is_rfc8441_enabled:
+            self.local_settings.enable_connect_protocol = 1
         self.remote_settings = Settings(client=not self.config.client_side)
 
         # The current value of the connection flow control windows on the
