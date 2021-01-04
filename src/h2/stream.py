@@ -1230,6 +1230,7 @@ class H2Stream:
             is_trailer=is_trailer,
             is_response_header=is_response_header,
             is_push_promise=is_push_promise,
+            is_rfc8441_enabled=self.config.is_rfc8441_enabled,
         )
 
     def _build_headers_frames(self,

@@ -423,10 +423,15 @@ class TestFilter(object):
 
     hdr_validation_combos = [
         h2.utilities.HeaderValidationFlags(
-            is_client, is_trailer, is_response_header, is_push_promise
+            is_client,
+            is_trailer,
+            is_response_header,
+            is_push_promise,
+            is_rfc8441_enabled,
         )
-        for is_client, is_trailer, is_response_header, is_push_promise in (
-            itertools.product([True, False], repeat=4)
+        for is_client, is_trailer, is_response_header, is_push_promise,
+        is_rfc8441_enabled in (
+            itertools.product([True, False], repeat=5)
         )
     ]
 
@@ -494,6 +499,68 @@ class TestFilter(object):
             (u':path', u''),
         ),
     )
+    invalid_connect_request_block_bytes = (
+        # First, missing :authority with :protocol header
+        (
+            (b':method', b'CONNECT'),
+            (b':protocol', b'test_value'),
+            (b'host', b'example.com'),
+        ),
+        # Next, missing :authority without :protocol header
+        (
+            (b':method', b'CONNECT'),
+            (b'host', b'example.com'),
+        )
+    )
+    invalid_connect_request_block_unicode = (
+        # First, missing :authority with :protocol header
+        (
+            (u':method', u'CONNECT'),
+            (u':protocol', u'websocket'),
+            (u'host', u'example.com'),
+        ),
+        # Next, missing :authority without :protocol header
+        (
+            (u':method', u'CONNECT'),
+            (u'host', u'example.com'),
+        ),
+    )
+    invalid_connect_req_rfc8441_bytes = (
+        # First, missing :path header
+        (
+            (b':authority', b'example.com'),
+            (b':method', b'CONNECT'),
+            (b':protocol', b'test_value'),
+            (b':scheme', b'https'),
+            (b'host', b'example.com'),
+        ),
+        # Next, missing :scheme header
+        (
+            (b':authority', b'example.com'),
+            (b':method', b'CONNECT'),
+            (b':protocol', b'test_value'),
+            (b':path', b'/'),
+            (b'host', b'example.com'),
+        )
+    )
+    invalid_connect_req_rfc8441_unicode = (
+        # First, missing :path header
+        (
+            (u':authority', u'example.com'),
+            (u':method', u'CONNECT'),
+            (u':protocol', u'test_value'),
+            (u':scheme', u'https'),
+            (u'host', u'example.com'),
+        ),
+        # Next, missing :scheme header
+        (
+            (u':authority', u'example.com'),
+            (u':method', u'CONNECT'),
+            (u':protocol', u'test_value'),
+            (u':path', u'/'),
+            (u'host', u'example.com'),
+        )
+    )
 
     # All headers that are forbidden from either request or response blocks.
     forbidden_request_headers_bytes = (b':status',)
@@ -504,6 +571,8 @@ class TestFilter(object):
     forbidden_response_headers_unicode = (
         u':path', u':scheme', u':authority', u':method'
     )
+    forbidden_connect_request_headers_bytes = (b':scheme', b':path')
+    forbidden_connect_request_headers_unicode = (u':scheme', u':path')
 
     @pytest.mark.parametrize('validation_function', validation_functions)
     @pytest.mark.parametrize('hdr_validation_flags', hdr_validation_combos)
@@ -687,6 +756,161 @@ class TestFilter(object):
         headers.append((invalid_header, b'some value'))
         with pytest.raises(h2.exceptions.ProtocolError):
             list(h2.utilities.validate_headers(headers, hdr_validation_flags))
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'header_block', (
+                invalid_connect_request_block_bytes +
+                invalid_connect_request_block_unicode
+        )
+    )
+    def test_outbound_connect_req_missing_pseudo_headers(self,
+                                                         hdr_validation_flags,
+                                                         header_block):
+        if not hdr_validation_flags.is_rfc8441_enabled:
+            with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
+                list(
+                    h2.utilities.validate_outbound_headers(
+                        header_block, hdr_validation_flags
+                    )
+                )
+            # Check if missing :path and :scheme headers
+            # doesn't throw ProtocolError exception
+            assert "missing mandatory :path header" \
+                   not in str(protocol_error.value)
+            assert "missing mandatory :scheme header" \
+                   not in str(protocol_error.value)
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'header_block', invalid_connect_request_block_bytes
+    )
+    def test_inbound_connect_req_missing_pseudo_headers(self,
+                                                        hdr_validation_flags,
+                                                        header_block):
+        if not hdr_validation_flags.is_rfc8441_enabled:
+            with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
+                list(
+                    h2.utilities.validate_headers(
+                        header_block, hdr_validation_flags
+                    )
+                )
+            # Check if missing :path and :scheme headers
+            # doesn't throw ProtocolError exception
+            assert "missing mandatory :path header" \
+                   not in str(protocol_error.value)
+            assert "missing mandatory :scheme header" \
+                   not in str(protocol_error.value)
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'invalid_header',
+        forbidden_connect_request_headers_bytes
+        + forbidden_connect_request_headers_unicode
+    )
+    def test_outbound_connect_req_extra_pseudo_headers(self,
+                                                       hdr_validation_flags,
+                                                       invalid_header):
+        """
+        Inbound request header blocks containing the forbidden request headers
+        fail validation.
+        """
+        headers = [
+            (b':authority', b'google.com'),
+            (b':method', b'CONNECT'),
+            (b':protocol', b'websocket'),
+        ]
+        if not hdr_validation_flags.is_rfc8441_enabled:
+            headers.append((invalid_header, b'some value'))
+            with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
+                list(
+                    h2.utilities.validate_outbound_headers(
+                        headers, hdr_validation_flags
+                    )
+                )
+            if isinstance(invalid_header, bytes):
+                expected_exception_string = (b'Header block must not contain '
+                                             + invalid_header
+                                             + b' header').decode("utf-8")
+            else:
+                expected_exception_string = 'Header block must not contain ' \
+                                            + invalid_header + ' header'
+            assert expected_exception_string == str(protocol_error.value)
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'invalid_header',
+        forbidden_connect_request_headers_bytes
+    )
+    def test_inbound_connect_req_extra_pseudo_headers(self,
+                                                      hdr_validation_flags,
+                                                      invalid_header):
+        """
+        Inbound request header blocks containing the forbidden request headers
+        fail validation.
+        """
+        headers = [
+            (b':authority', b'google.com'),
+            (b':method', b'CONNECT'),
+            (b':protocol', b'some value'),
+        ]
+        if not hdr_validation_flags.is_rfc8441_enabled:
+            headers.append((invalid_header, b'some value'))
+            with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
+                list(
+                    h2.utilities.validate_headers(
+                        headers, hdr_validation_flags
+                    )
+                )
+            assert (b'Header block must not contain '
+                    + invalid_header
+                    + b' header').decode("utf-8") == str(protocol_error.value)
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'header_block', (
+                invalid_connect_req_rfc8441_bytes +
+                invalid_connect_req_rfc8441_unicode
+        )
+    )
+    def test_outbound_connect_req_rfc8441_missing_pseudo_headers(
+            self, hdr_validation_flags, header_block
+    ):
+        if hdr_validation_flags.is_rfc8441_enabled:
+            with pytest.raises(h2.exceptions.ProtocolError):
+                list(
+                    h2.utilities.validate_outbound_headers(
+                        header_block, hdr_validation_flags
+                    )
+                )
+
+    @pytest.mark.parametrize(
+        'hdr_validation_flags', hdr_validation_request_headers_no_trailer
+    )
+    @pytest.mark.parametrize(
+        'header_block', invalid_connect_req_rfc8441_bytes
+    )
+    def test_inbound_connect_req_rfc8441_missing_pseudo_headers(
+            self, hdr_validation_flags, header_block
+    ):
+        if hdr_validation_flags.is_rfc8441_enabled:
+            print("here", header_block)
+            with pytest.raises(h2.exceptions.ProtocolError):
+                list(
+                    h2.utilities.validate_headers(
+                        header_block, hdr_validation_flags
+                    )
+                )
 
 
 class TestOversizedHeaders(object):

@@ -22,6 +22,7 @@ class TestH2Config(object):
         config = h2.config.H2Configuration()
         assert config.client_side
         assert config.header_encoding is None
+        assert config.is_rfc8441_enabled is False
         assert isinstance(config.logger, h2.config.DummyLogger)
 
     boolean_config_options = [
@@ -30,6 +31,7 @@ class TestH2Config(object):
         'normalize_outbound_headers',
         'validate_inbound_headers',
         'normalize_inbound_headers',
+        'enable_rfc8441',
     ]
 
     @pytest.mark.parametrize('option_name', boolean_config_options)
@@ -119,6 +121,15 @@ class TestH2Config(object):
         config = h2.config.H2Configuration()
         config.header_encoding = header_encoding
         assert config.header_encoding == header_encoding
+
+    @pytest.mark.parametrize('enable_rfc8441', [False, True])
+    def test_enable_rfc8441_is_reflected_init(self, enable_rfc8441):
+        """
+        The value of ``enable_rfc8441``, when set, is reflected in the value
+        via the initializer.
+        """
+        config = h2.config.H2Configuration(enable_rfc8441=enable_rfc8441)
+        assert config.is_rfc8441_enabled == enable_rfc8441
 
     def test_logger_instance_is_reflected(self):
         """
