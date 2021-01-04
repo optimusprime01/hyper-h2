@@ -186,7 +186,13 @@ def authority_from_headers(headers):
 # should be applied to a given set of headers.
 HeaderValidationFlags = collections.namedtuple(
     'HeaderValidationFlags',
-    ['is_client', 'is_trailer', 'is_response_header', 'is_push_promise', 'is_rfc8441_enabled']
+    [
+        'is_client',
+        'is_trailer',
+        'is_response_header',
+        'is_push_promise',
+        'is_rfc8441_enabled',
+    ]
 )
 
 
@@ -319,8 +325,8 @@ def _assert_header_in_set(string_header, bytes_header, header_set):
 def _assert_header_not_in_set(string_header, bytes_header, header_set):
     """
     Given a set of header names, checks whether the string or byte version of
-    the header name is not present. Raises a Protocol error with the appropriate
-    error if it's present.
+    the header name is not present. Raises a Protocol error with the
+    appropriate error if it's present.
     """
     if (string_header in header_set or bytes_header in header_set):
         raise ProtocolError(
@@ -411,7 +417,8 @@ def _check_pseudo_header_field_acceptability(pseudo_headers,
         _assert_header_in_set(u':method', b':method', pseudo_headers)
         if method == b'CONNECT':
             _assert_header_in_set(u':authority', b':authority', pseudo_headers)
-        if method == b'CONNECT' and not hdr_validation_flags.is_rfc8441_enabled:
+        if method == b'CONNECT' and \
+                not hdr_validation_flags.is_rfc8441_enabled:
             _assert_header_not_in_set(u':path', b':path', pseudo_headers)
             _assert_header_not_in_set(u':scheme', b':scheme', pseudo_headers)
         else:

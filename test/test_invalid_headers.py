@@ -423,9 +423,14 @@ class TestFilter(object):
 
     hdr_validation_combos = [
         h2.utilities.HeaderValidationFlags(
-            is_client, is_trailer, is_response_header, is_push_promise, is_rfc8441_enabled
+            is_client,
+            is_trailer,
+            is_response_header,
+            is_push_promise,
+            is_rfc8441_enabled,
         )
-        for is_client, is_trailer, is_response_header, is_push_promise, is_rfc8441_enabled in (
+        for is_client, is_trailer, is_response_header, is_push_promise,
+        is_rfc8441_enabled in (
             itertools.product([True, False], repeat=5)
         )
     ]
@@ -771,9 +776,12 @@ class TestFilter(object):
                         header_block, hdr_validation_flags
                     )
                 )
-            # Check if missing :path and :scheme headers doesn't throw ProtocolError exception
-            assert "missing mandatory :path header" not in str(protocol_error.value)
-            assert "missing mandatory :scheme header" not in str(protocol_error.value)
+            # Check if missing :path and :scheme headers
+            # doesn't throw ProtocolError exception
+            assert "missing mandatory :path header" \
+                   not in str(protocol_error.value)
+            assert "missing mandatory :scheme header" \
+                   not in str(protocol_error.value)
 
     @pytest.mark.parametrize(
         'hdr_validation_flags', hdr_validation_request_headers_no_trailer
@@ -791,16 +799,20 @@ class TestFilter(object):
                         header_block, hdr_validation_flags
                     )
                 )
-            # Check if missing :path and :scheme headers doesn't throw ProtocolError exception
-            assert "missing mandatory :path header" not in str(protocol_error.value)
-            assert "missing mandatory :scheme header" not in str(protocol_error.value)
+            # Check if missing :path and :scheme headers
+            # doesn't throw ProtocolError exception
+            assert "missing mandatory :path header" \
+                   not in str(protocol_error.value)
+            assert "missing mandatory :scheme header" \
+                   not in str(protocol_error.value)
 
     @pytest.mark.parametrize(
         'hdr_validation_flags', hdr_validation_request_headers_no_trailer
     )
     @pytest.mark.parametrize(
         'invalid_header',
-        forbidden_connect_request_headers_bytes + forbidden_connect_request_headers_unicode
+        forbidden_connect_request_headers_bytes
+        + forbidden_connect_request_headers_unicode
     )
     def test_outbound_connect_req_extra_pseudo_headers(self,
                                                      hdr_validation_flags,
@@ -817,13 +829,19 @@ class TestFilter(object):
         if not hdr_validation_flags.is_rfc8441_enabled:
             headers.append((invalid_header, b'some value'))
             with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
-                list(h2.utilities.validate_outbound_headers(headers, hdr_validation_flags))
+                list(
+                    h2.utilities.validate_outbound_headers(
+                        headers, hdr_validation_flags
+                    )
+                )
             if isinstance(invalid_header, bytes):
-                expected_exception_string = (b'Header block must not contain ' + invalid_header + b' header')\
-                                            .decode("utf-8")
+                expected_exception_string = (b'Header block must not contain '
+                                             + invalid_header
+                                             + b' header').decode("utf-8")
             else:
-                expected_exception_string = 'Header block must not contain ' + invalid_header + ' header'
-            assert  expected_exception_string == str(protocol_error.value)
+                expected_exception_string = 'Header block must not contain ' \
+                                            + invalid_header + ' header'
+            assert expected_exception_string == str(protocol_error.value)
 
     @pytest.mark.parametrize(
         'hdr_validation_flags', hdr_validation_request_headers_no_trailer
@@ -847,10 +865,14 @@ class TestFilter(object):
         if not hdr_validation_flags.is_rfc8441_enabled:
             headers.append((invalid_header, b'some value'))
             with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
-                list(h2.utilities.validate_headers(headers, hdr_validation_flags))
-            assert (b'Header block must not contain ' + invalid_header + b' header').decode("utf-8") \
-                == str(protocol_error.value)
-
+                list(
+                    h2.utilities.validate_headers(
+                        headers, hdr_validation_flags
+                    )
+                )
+            assert (b'Header block must not contain '
+                    + invalid_header
+                    + b' header').decode("utf-8") == str(protocol_error.value)
 
     @pytest.mark.parametrize(
         'hdr_validation_flags', hdr_validation_request_headers_no_trailer

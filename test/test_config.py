@@ -123,7 +123,7 @@ class TestH2Config(object):
         assert config.header_encoding == header_encoding
 
     @pytest.mark.parametrize('enable_rfc8441', [False, True])
-    def test_header_encoding_is_reflected_init(self, enable_rfc8441):
+    def test_enable_rfc8441_is_reflected_init(self, enable_rfc8441):
         """
         The value of ``enable_rfc8441``, when set, is reflected in the value
         via the initializer.

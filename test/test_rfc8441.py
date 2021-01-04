@@ -33,7 +33,9 @@ class TestRFC8441(object):
         client.send_headers(stream_id=1, headers=headers)
 
         server = h2.connection.H2Connection(
-            config=h2.config.H2Configuration(client_side=False, enable_rfc8441=True)
+            config=h2.config.H2Configuration(
+                client_side=False, enable_rfc8441=True
+            )
         )
         events = server.receive_data(client.data_to_send())
         event = events[1]
