@@ -767,8 +767,8 @@ class TestFilter(object):
         )
     )
     def test_outbound_connect_req_missing_pseudo_headers(self,
-                                                       hdr_validation_flags,
-                                                       header_block):
+                                                         hdr_validation_flags,
+                                                         header_block):
         if not hdr_validation_flags.is_rfc8441_enabled:
             with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
                 list(
@@ -790,8 +790,8 @@ class TestFilter(object):
         'header_block', invalid_connect_request_block_bytes
     )
     def test_inbound_connect_req_missing_pseudo_headers(self,
-                                                       hdr_validation_flags,
-                                                       header_block):
+                                                        hdr_validation_flags,
+                                                        header_block):
         if not hdr_validation_flags.is_rfc8441_enabled:
             with pytest.raises(h2.exceptions.ProtocolError) as protocol_error:
                 list(
@@ -815,8 +815,8 @@ class TestFilter(object):
         + forbidden_connect_request_headers_unicode
     )
     def test_outbound_connect_req_extra_pseudo_headers(self,
-                                                     hdr_validation_flags,
-                                                     invalid_header):
+                                                       hdr_validation_flags,
+                                                       invalid_header):
         """
         Inbound request header blocks containing the forbidden request headers
         fail validation.
@@ -851,8 +851,8 @@ class TestFilter(object):
         forbidden_connect_request_headers_bytes
     )
     def test_inbound_connect_req_extra_pseudo_headers(self,
-                                                     hdr_validation_flags,
-                                                     invalid_header):
+                                                      hdr_validation_flags,
+                                                      invalid_header):
         """
         Inbound request header blocks containing the forbidden request headers
         fail validation.
@@ -883,9 +883,9 @@ class TestFilter(object):
                 invalid_connect_req_rfc8441_unicode
         )
     )
-    def test_outbound_connect_req_rfc8441_missing_pseudo_headers(self,
-                                                       hdr_validation_flags,
-                                                       header_block):
+    def test_outbound_connect_req_rfc8441_missing_pseudo_headers(
+            self, hdr_validation_flags, header_block
+    ):
         if hdr_validation_flags.is_rfc8441_enabled:
             with pytest.raises(h2.exceptions.ProtocolError):
                 list(
@@ -900,9 +900,9 @@ class TestFilter(object):
     @pytest.mark.parametrize(
         'header_block', invalid_connect_req_rfc8441_bytes
     )
-    def test_inbound_connect_req_rfc8441_missing_pseudo_headers(self,
-                                                       hdr_validation_flags,
-                                                       header_block):
+    def test_inbound_connect_req_rfc8441_missing_pseudo_headers(
+            self, hdr_validation_flags, header_block
+    ):
         if hdr_validation_flags.is_rfc8441_enabled:
             print("here", header_block)
             with pytest.raises(h2.exceptions.ProtocolError):
